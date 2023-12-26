@@ -91,7 +91,6 @@ const App = () => {
         const maxX = noticeBoard.offsetWidth - dragItem.current.width;
         const maxY = noticeBoard.offsetHeight - dragItem.current.height;
 
-      
         const boundedX = Math.min(Math.max(x, 0), maxX);
         const boundedY = Math.min(Math.max(y, 0), maxY);
 
@@ -144,7 +143,7 @@ const App = () => {
               autoFocus
             />
           ) : (
-            <div>{note.text}</div>
+            <div onClick={() => handleEdit(note.id)}>{note.text}</div>
           )}
         </div>
       ))}
