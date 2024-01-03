@@ -49,9 +49,12 @@ const App = () => {
   };
 
   const handleDrag = (id, x, y) => {
-    setNotes(
-      notes.map((note) => (note.id === id ? { ...note, x, y } : note))
-    );
+    // Use requestAnimationFrame for smoother drag
+    requestAnimationFrame(() => {
+      setNotes(
+        notes.map((note) => (note.id === id ? { ...note, x, y } : note))
+      );
+    });
   };
 
   const handleEdit = (id) => {
@@ -109,11 +112,7 @@ const App = () => {
         const boundedX = Math.min(Math.max(x, 0), maxX);
         const boundedY = Math.min(Math.max(y, 0), maxY);
 
-        setNotes((prevNotes) =>
-          prevNotes.map((note) =>
-            note.id === dragItem.current.id ? { ...note, x: boundedX, y: boundedY } : note
-          )
-        );
+        handleDrag(dragItem.current.id, boundedX, boundedY);
       }
     };
 
