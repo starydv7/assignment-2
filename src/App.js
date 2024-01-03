@@ -83,29 +83,50 @@ const App = () => {
   useEffect(() => {
     const noticeBoard = document.querySelector('.notice-board');
 
+    const handleMouseDown = (e) => {
+      const id = parseInt(e.target.getAttribute('data-id'), 10);
+      const note = notes.find((n) => n.id === id);
+
+      if (note && !note.pinned) {
+        const offsetX = e.clientX - note.x;
+        const offsetY = e.clientY - note.y;
+
+        dragItem.current = { id, width: note.width, height: note.height, offsetX, offsetY };
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+      }
+    };
+
     const handleMouseMove = (e) => {
       if (dragItem.current) {
-        const x = e.clientX - dragItem.current.width / 2;
-        const y = e.clientY - dragItem.current.height / 2;
+        const boundingRect = noticeBoard.getBoundingClientRect();
+        const x = e.clientX - boundingRect.left - dragItem.current.offsetX;
+        const y = e.clientY - boundingRect.top - dragItem.current.offsetY;
 
-        const maxX = noticeBoard.offsetWidth - dragItem.current.width;
-        const maxY = noticeBoard.offsetHeight - dragItem.current.height;
+        const maxX = boundingRect.width - dragItem.current.width;
+        const maxY = boundingRect.height - dragItem.current.height;
 
         const boundedX = Math.min(Math.max(x, 0), maxX);
         const boundedY = Math.min(Math.max(y, 0), maxY);
 
-        handleDrag(dragItem.current.id, boundedX, boundedY);
+        setNotes((prevNotes) =>
+          prevNotes.map((note) =>
+            note.id === dragItem.current.id ? { ...note, x: boundedX, y: boundedY } : note
+          )
+        );
       }
     };
 
     const handleMouseUp = () => {
       dragItem.current = null;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    noticeBoard.addEventListener('mousedown', handleMouseDown);
 
     return () => {
+      noticeBoard.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -124,6 +145,7 @@ const App = () => {
             handleDragStart(e, note.id);
             dragItem.current = note;
           }}
+          data-id={note.id}
         >
           <div className="controls">
             <button onClick={() => deleteNote(note.id)}>x</button>
