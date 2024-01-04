@@ -1,11 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Draggable from 'react-draggable';
 import './App.css';
 
 const App = () => {
-  const noticeBoardRef = useRef(null);
   const [notes, setNotes] = useState([
     { id: 1, text: 'Note 1', x: 50, y: 50, pinned: false, width: 150, height: 100 },
   ]);
+  const [boardPosition, setBoardPosition] = useState({ x: 0, y: 0 });
+
+  const boardRef = useRef(null);
+
+  useEffect(() => {
+    const updateBoardPosition = () => {
+      const boardRect = boardRef.current.getBoundingClientRect();
+      setBoardPosition({ x: boardRect.left, y: boardRect.top });
+    };
+
+    window.addEventListener('resize', updateBoardPosition);
+    updateBoardPosition(); // Initial position
+
+    return () => {
+      window.removeEventListener('resize', updateBoardPosition);
+    };
+  }, []);
 
   const addNote = () => {
     const newNote = {
@@ -32,41 +49,12 @@ const App = () => {
     );
   };
 
-  const handleDragStart = (e, id) => {
-    const note = notes.find((n) => n.id === id);
-    e.dataTransfer.setData('text/plain', id.toString());
-    e.dataTransfer.setDragImage(e.target, note.width / 2, note.height / 2);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const id = parseInt(e.dataTransfer.getData('text/plain'), 10);
-    const note = notes.find((n) => n.id === id);
-    if (note) {
-      const x = e.clientX - note.width / 2;
-      const y = e.clientY - note.height / 2;
-      handleDrag(id, x, y);
-    }
-  };
-
-  const handleDrag = (id, x, y) => {
-    // Use requestAnimationFrame for smoother drag
-    requestAnimationFrame(() => {
-      setNotes(
-        notes.map((note) => (note.id === id ? { ...note, x, y } : note))
-      );
-    });
-  };
-
-  const handleEdit = (id, e) => {
-    // Check if the left mouse button is clicked (button value 0) and if it's not a drag event
-    if (e.button === 0 && !dragItem.current) {
-      setNotes(
-        notes.map((note) =>
-          note.id === id ? { ...note, editing: !note.editing } : note
-        )
-      );
-    }
+  const handleEdit = (id) => {
+    setNotes(
+      notes.map((note) =>
+        note.id === id ? { ...note, editing: !note.editing } : note
+      )
+    );
   };
 
   const handleEditChange = (id, newText) => {
@@ -85,98 +73,68 @@ const App = () => {
     );
   };
 
-  const dragItem = useRef(null);
-
-  useEffect(() => {
-    const noticeBoard = noticeBoardRef.current;
-
-    const handleMouseDown = (e) => {
-      const id = parseInt(e.target.getAttribute('data-id'), 10);
-      const note = notes.find((n) => n.id === id);
-
-      if (note && !note.pinned) {
-        const offsetX = e.clientX - note.x;
-        const offsetY = e.clientY - note.y;
-
-        dragItem.current = { id, width: note.width, height: note.height, offsetX, offsetY };
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-      }
-    };
-
-    const handleMouseMove = (e) => {
-      if (dragItem.current) {
-        const boundingRect = noticeBoard.getBoundingClientRect();
-        const x = e.clientX - boundingRect.left - dragItem.current.offsetX;
-        const y = e.clientY - boundingRect.top - dragItem.current.offsetY;
-
-        const maxX = boundingRect.width - dragItem.current.width;
-        const maxY = boundingRect.height - dragItem.current.height;
-
-        const boundedX = Math.min(Math.max(x, 0), maxX);
-        const boundedY = Math.min(Math.max(y, 0), maxY);
-
-        handleDrag(dragItem.current.id, boundedX, boundedY);
-      }
-    };
-
-    const handleMouseUp = () => {
-      dragItem.current = null;
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    noticeBoard.addEventListener('mousedown', handleMouseDown);
-
-    return () => {
-      noticeBoard.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [notes]);
-
   return (
-    <div className="notice-board" ref={noticeBoardRef} onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
-      <button className="add-button" onClick={addNote}>
-        +
-      </button>
-      {notes.map((note) => (
+    <div
+    className="notice-board"
+    ref={boardRef}
+    style={{ position: 'relative', overflow: 'hidden' }}
+  >
+    <button className="add-button" onClick={addNote}>
+      +
+    </button>
+    {notes.map((note) => (
+      <Draggable
+      key={note.id}
+      defaultPosition={{ x: note.x, y: note.y }}
+      onStart={(e, data) => handleEditBlur(note.id)}
+      onDrag={(e, data) => {
+        if (note.pinned) {
+          // If the note is pinned, prevent dragging
+          data.x = 0;
+          data.y = 0;
+        }
+      }}
+      onStop={(e, data) => {
+        if (note.pinned) {
+
+          setNotes((prevNotes) =>
+            prevNotes.map((prevNote) =>
+              prevNote.id === note.id ? { ...prevNote, x: 0, y: 0 } : prevNote
+            )
+          );
+        }
+      }}
+      draggable={!note.pinned} 
+      >
         <div
-          key={note.id}
           className={`sticky-note ${note.pinned ? 'pinned' : ''}`}
-          style={{ top: note.y, left: note.x, transition: 'left 0.3s, top 0.3s' }}
-          draggable={!note.pinned}
-          onDragStart={(e) => {
-            handleDragStart(e, note.id);
-            dragItem.current = note;
-          }}
-          data-id={note.id}
+          style={{ width: note.width, height: note.height }}
         >
           <div className="controls">
             <button onClick={() => deleteNote(note.id)}>x</button>
             <button onClick={() => togglePin(note.id)}>
               {note.pinned ? 'Unpin' : 'Pin'}
             </button>
-            <button onClick={(e) => handleEdit(note.id, e)}>
+            <button onClick={() => handleEdit(note.id)}>
               {note.editing ? 'Save' : 'Edit'}
             </button>
           </div>
           {note.editing ? (
-            <input
-              type="text"
+            <textarea
               value={note.text}
               onChange={(e) => handleEditChange(note.id, e.target.value)}
               onBlur={() => handleEditBlur(note.id)}
               autoFocus
             />
           ) : (
-            <div className="note-content" onClick={(e) => handleEdit(note.id, e)}>
+            <div className="note-content" onClick={() => handleEdit(note.id)}>
               {note.text}
             </div>
           )}
         </div>
-      ))}
-    </div>
+      </Draggable>
+    ))}
+  </div>
   );
 };
 
