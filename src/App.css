@@ -1,24 +1,30 @@
-
 .notice-board {
   position: relative;
   width: 80%;
-  height: 70vh;
+  min-height: 70vh;
   background-color: #e6a910;
   padding: 20px;
   display: flex;
-  margin-top: 5%;
+  margin: auto;
+  gap: 10px;
   flex-wrap: wrap;
-  margin: auto; 
+  margin-top: 5%;
+}
+.add-button{
+  width:2%;
+  height: 2%;
+  float: left;
 }
 
 .sticky-note {
   position: absolute;
   background-color: #ffffcc;
   border: 1px solid #e0e0e0;
-  padding: 15px; 
+  padding: 15px;
   cursor: pointer;
   overflow: hidden;
   box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
 }
 
 .sticky-note.pinned {
@@ -34,7 +40,7 @@
 .controls button {
   background-color: #e0e0e0;
   border: none;
-  padding: 8px; 
+  padding: 8px;
   cursor: pointer;
   font-size: 12px;
 }
@@ -49,11 +55,10 @@
 
 .input-container input {
   width: 100%;
-  padding: 8px; 
+  padding: 8px;
   box-sizing: border-box;
   font-size: 14px;
 }
-
 
 @media (max-width: 768px) {
   .notice-board {

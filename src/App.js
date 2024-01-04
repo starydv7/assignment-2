@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 const App = () => {
+  const noticeBoardRef = useRef(null);
   const [notes, setNotes] = useState([
     { id: 1, text: 'Note 1', x: 50, y: 50, pinned: false, width: 150, height: 100 },
   ]);
@@ -57,12 +58,15 @@ const App = () => {
     });
   };
 
-  const handleEdit = (id) => {
-    setNotes(
-      notes.map((note) =>
-        note.id === id ? { ...note, editing: !note.editing } : note
-      )
-    );
+  const handleEdit = (id, e) => {
+    // Check if the left mouse button is clicked (button value 0) and if it's not a drag event
+    if (e.button === 0 && !dragItem.current) {
+      setNotes(
+        notes.map((note) =>
+          note.id === id ? { ...note, editing: !note.editing } : note
+        )
+      );
+    }
   };
 
   const handleEditChange = (id, newText) => {
@@ -84,7 +88,7 @@ const App = () => {
   const dragItem = useRef(null);
 
   useEffect(() => {
-    const noticeBoard = document.querySelector('.notice-board');
+    const noticeBoard = noticeBoardRef.current;
 
     const handleMouseDown = (e) => {
       const id = parseInt(e.target.getAttribute('data-id'), 10);
@@ -132,13 +136,15 @@ const App = () => {
   }, [notes]);
 
   return (
-    <div className="notice-board" onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
-      <button onClick={addNote}>+</button>
+    <div className="notice-board" ref={noticeBoardRef} onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
+      <button className="add-button" onClick={addNote}>
+        +
+      </button>
       {notes.map((note) => (
         <div
           key={note.id}
           className={`sticky-note ${note.pinned ? 'pinned' : ''}`}
-          style={{ top: note.y, left: note.x }}
+          style={{ top: note.y, left: note.x, transition: 'left 0.3s, top 0.3s' }}
           draggable={!note.pinned}
           onDragStart={(e) => {
             handleDragStart(e, note.id);
@@ -151,7 +157,7 @@ const App = () => {
             <button onClick={() => togglePin(note.id)}>
               {note.pinned ? 'Unpin' : 'Pin'}
             </button>
-            <button onClick={() => handleEdit(note.id)}>
+            <button onClick={(e) => handleEdit(note.id, e)}>
               {note.editing ? 'Save' : 'Edit'}
             </button>
           </div>
@@ -164,7 +170,9 @@ const App = () => {
               autoFocus
             />
           ) : (
-            <div onClick={() => handleEdit(note.id)}>{note.text}</div>
+            <div className="note-content" onClick={(e) => handleEdit(note.id, e)}>
+              {note.text}
+            </div>
           )}
         </div>
       ))}
