@@ -89,22 +89,21 @@ const App = () => {
       onStart={(e, data) => handleEditBlur(note.id)}
       onDrag={(e, data) => {
         if (note.pinned) {
-          // If the note is pinned, prevent dragging
-          data.x = 0;
-          data.y = 0;
+          return false; // Prevent dragging if the note is pinned
         }
       }}
       onStop={(e, data) => {
-        if (note.pinned) {
-
+        if (!note.pinned) {
           setNotes((prevNotes) =>
             prevNotes.map((prevNote) =>
-              prevNote.id === note.id ? { ...prevNote, x: 0, y: 0 } : prevNote
+              prevNote.id === note.id
+                ? { ...prevNote, x: data.x, y: data.y }
+                : prevNote
             )
           );
         }
       }}
-      draggable={!note.pinned} 
+      draggable={!note.pinned}
       >
         <div
           className={`sticky-note ${note.pinned ? 'pinned' : ''}`}
